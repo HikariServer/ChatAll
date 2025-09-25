@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'dev.atsukigames'
+version = '1.1.0'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'velocity'
+        url = 'https://nexus.velocitypowered.com/repository/maven-public/'
+    }
+}
+
+dependencies {
+    compileOnly 'com.velocitypowered:velocity-api:3.2.0-SNAPSHOT'
+    annotationProcessor 'com.velocitypowered:velocity-api:3.2.0-SNAPSHOT'
+
+    // Moji4J（パッケージは com.moji4j、座標は com.andree-surya:moji4j）
+    implementation 'com.andree-surya:moji4j:1.2.0'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+// 通常のjarではなくshadowJarを最終成果物にする
+tasks.named('jar') {
+    enabled = false
+}
+
+tasks.named('shadowJar') {
+    // 出力名を通常Jarと同じにして置き換え
+    archiveBaseName.set('ChatAll')
+    archiveClassifier.set('')
+    archiveVersion.set(project.version)
+
+    // 依存をすべて同梱（runtimeClasspath）してfat-jar化
+    // 必要に応じてサイズ削減
+    minimize()
+
+    // 依存のパッケージ競合を避けるためのリロケート（任意だが推奨）
+    relocate 'com.moji4j', 'dev.atsukigames.chatall.shaded.moji4j'
+}
+
+// buildでshadowJarが生成されるよう依存付け
+tasks.build {
+    dependsOn tasks.shadowJar
+}
